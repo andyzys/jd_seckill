@@ -1,0 +1,6 @@
+certifi==2020.4.5.1
+chardet==3.0.4
+idna==2.9
+lxml==4.5.1
+requests==2.23.0
+urllib3==1.25.9
