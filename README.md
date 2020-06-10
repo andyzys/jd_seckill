@@ -1,6 +1,6 @@
 # Jd_maotai
 
-##### 非常感谢原作者https://github.com/zhou-xiaojun/jd_mask提供的代码
+##### 非常感谢原作者 https://github.com/zhou-xiaojun/jd_mask 提供的代码
 
 ## 主要功能
 
@@ -24,10 +24,11 @@
 #### 1. 网页扫码登录
 #### 2. 填写config.ini配置信息 
 (1)eid,和fp找个普通商品随便下单,然后抓包就能看到,这两个值可以填固定的 
-> 不会的话参考原作者的issue [https://github.com/zhou-xiaojun/jd_mask/issues/22]
+> 不会的话参考原作者的issue https://github.com/zhou-xiaojun/jd_mask/issues/22
 
 (2)cookies_string,sku_id,DEFAULT_USER_AGENT(和cookie获取同一个地方就会看到.直接复制进去就可以了) 
->这里注意每次扫码登陆后都需要重新获取cookies_string,其他两个不需要，sku_id我已经按照茅台的填好 
+>这里注意每次扫码登陆后都需要重新获取cookies_string,其他两个不用  
+>sku_id我已经按照茅台的填好 
 
 (3)配置一下时间
  
