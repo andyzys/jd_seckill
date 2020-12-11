@@ -9,7 +9,7 @@ from config import global_config
 from concurrent.futures import ProcessPoolExecutor
 
 
-class JdSecKill(object):
+class JdSeckill(object):
     def __init__(self):
         # 初始化信息
         self.session = get_session()

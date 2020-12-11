@@ -3,7 +3,7 @@ import logging.handlers
 '''
 日志模块
 '''
-LOG_FILENAME = 'jdBuyMask.log'
+LOG_FILENAME = 'jd_seckill.log'
 logger = logging.getLogger()
 
 

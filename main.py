@@ -1,7 +1,5 @@
 import sys
-from jd_mask_spider_requests import JdSecKill
-
-
+from jd_spider_requests import JdSeckill
 
 
 if __name__ == '__main__':
@@ -15,7 +13,7 @@ if __name__ == '__main__':
     """
     print(a)
 
-    jd_seckill = JdSecKill()
+    jd_seckill = JdSeckill()
     choice_function = input('选择功能:')
     if choice_function == '1':
         jd_seckill.reserve()
