@@ -36,7 +36,7 @@ class JdSecKill(object):
     def wati_some_time(self):
         time.sleep(random.randint(100, 300) / 1000)
 
-    def seckill_by_proc_pool(self, work_count=3):
+    def seckill_by_proc_pool(self, work_count=5):
         """
         多进程进行抢购
         work_count：进程数量
@@ -44,7 +44,6 @@ class JdSecKill(object):
         with ProcessPoolExecutor(work_count) as pool:
             for i in range(work_count):
                 pool.submit(self.seckill)
-                self.wati_some_time()
 
     def __reserve(self):
         """
@@ -62,13 +61,14 @@ class JdSecKill(object):
         """
         抢购
         """
+        self.login()
         while True:
             try:
                 self.request_seckill_url()
                 self.request_seckill_checkout_page()
                 self.submit_seckill_order()
             except Exception as e:
-                logger.info('抢购发生异常!', e)
+                logger.info('抢购发生异常，稍后继续执行！', e)
             self.wati_some_time()
 
     def login(self):
@@ -134,14 +134,15 @@ class JdSecKill(object):
             'User-Agent': self.default_user_agent,
             'Referer': 'https://order.jd.com/center/list.action',
         }
-        try:
-            resp = self.session.get(url=url, params=payload, headers=headers)
-            resp_json = parse_json(resp.text)
-            # 响应中包含了许多用户信息，现在在其中返回昵称
-            # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
-            return resp_json.get('nickName') or 'jd'
-        except Exception:
-            return 'jd'
+
+        resp = self.session.get(url=url, params=payload, headers=headers)
+        resp_json = parse_json(resp.text)
+        # 响应中包含了许多用户信息，现在在其中返回昵称
+        # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
+        # nick_name = resp_json.get('nickName')
+        # if not nick_name:
+        #     raise Exception(f"获取用户昵称失败！")
+        return resp_json.get('nickName')
 
     def get_seckill_url(self):
         """获取商品的抢购链接
