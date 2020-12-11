@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import time
 from datetime import datetime
-from jdlogger import logger
+from jd_logger import logger
 from config import global_config
 
 class Timer(object):

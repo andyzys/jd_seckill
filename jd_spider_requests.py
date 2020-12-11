@@ -1,7 +1,7 @@
 import random
 import sys
 import time
-from jdlogger import logger
+from jd_logger import logger
 from timer import Timer
 import requests
 from util import parse_json, get_session, get_sku_title,send_wechat
