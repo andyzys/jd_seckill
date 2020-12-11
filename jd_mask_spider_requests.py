@@ -233,8 +233,7 @@ class Jd_Mask_Spider(object):
         payload = {
             'skuId': self.sku_id,
         }
-        self.seckill_order_data[self.sku_id] = self._get_seckill_order_data(
-            )
+        self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
         logger.info('提交抢购订单...')
         headers = {
             'User-Agent': self.default_user_agent,
