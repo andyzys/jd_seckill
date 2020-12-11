@@ -14,6 +14,7 @@ class JdSecKill(object):
         # 初始化信息
         self.session = get_session()
         self.sku_id = global_config.getRaw('config', 'sku_id')
+        self.seckill_num = 2
         self.seckill_init_info = dict()
         self.seckill_url = dict()
         self.seckill_order_data = dict()
@@ -200,7 +201,7 @@ class JdSecKill(object):
         url = 'https://marathon.jd.com/seckill/seckill.action'
         payload = {
             'skuId': self.sku_id,
-            'num': 2,
+            'num': self.seckill_num,
             'rid': int(time.time())
         }
         headers = {
@@ -218,7 +219,7 @@ class JdSecKill(object):
         url = 'https://marathon.jd.com/seckillnew/orderService/pc/init.action'
         data = {
             'sku': self.sku_id,
-            'num': 1,
+            'num': self.seckill_num,
             'isModifyAddress': 'false',
         }
         headers = {
@@ -241,7 +242,7 @@ class JdSecKill(object):
         token = init_info['token']
         data = {
             'skuId': self.sku_id,
-            'num': 1,
+            'num': self.seckill_num,
             'addressId': default_address['id'],
             'yuShou': 'true',
             'isModifyAddress': 'false',
@@ -290,7 +291,7 @@ class JdSecKill(object):
             'User-Agent': self.default_user_agent,
             'Host': 'marathon.jd.com',
             'Referer': 'https://marathon.jd.com/seckill/seckill.action?skuId={0}&num={1}&rid={2}'.format(
-                self.sku_id, 1, int(time.time())),
+                self.sku_id, self.seckill_num, int(time.time())),
         }
         resp = self.session.post(
             url=url,
