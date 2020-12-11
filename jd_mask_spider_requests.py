@@ -6,9 +6,10 @@ from timer import Timer
 import requests
 from util import parse_json, get_session, get_sku_title,send_wechat
 from config import global_config
+from concurrent.futures import ProcessPoolExecutor
 
 
-class Jd_Mask_Spider(object):
+class JdSecKill(object):
     def __init__(self):
         # 初始化信息
         self.session = get_session()
@@ -18,6 +19,56 @@ class Jd_Mask_Spider(object):
         self.seckill_order_data = dict()
         self.timers = Timer()
         self.default_user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
+
+    def reserve(self):
+        """
+        预约
+        """
+        self.__reserve()
+
+    def seckill(self):
+        """
+        抢购
+        """
+        self.__seckill()
+
+    def wati_some_time(self):
+        time.sleep(random.randint(100, 300) / 1000)
+
+    def seckill_by_proc_pool(self, work_count=3):
+        """
+        多进程进行抢购
+        work_count：进程数量
+        """
+        with ProcessPoolExecutor(work_count) as pool:
+            for i in range(work_count):
+                pool.submit(self.seckill)
+                self.wati_some_time()
+
+    def __reserve(self):
+        """
+        预约
+        """
+        self.login()
+        while True:
+            try:
+                self.make_reserve()
+            except Exception as e:
+                logger.info('预约发生异常!', e)
+            self.wati_some_time()
+
+    def __seckill(self):
+        """
+        抢购
+        """
+        while True:
+            try:
+                self.request_seckill_url()
+                self.request_seckill_checkout_page()
+                self.submit_seckill_order()
+            except Exception as e:
+                logger.info('抢购发生异常!', e)
+            self.wati_some_time()
 
     def login(self):
         for flag in range(1, 3):
@@ -122,8 +173,8 @@ class Jd_Mask_Spider(object):
                 logger.info("抢购链接获取成功: %s", seckill_url)
                 return seckill_url
             else:
-                logger.info("抢购链接获取失败，%s不是抢购商品或抢购页面暂未刷新，0.5秒后重试")
-                time.sleep(0.1)
+                logger.info("抢购链接获取失败，稍后自动重试")
+                self.wati_some_time()
 
     def request_seckill_url(self):
         """访问商品的抢购链接（用于设置cookie等"""
