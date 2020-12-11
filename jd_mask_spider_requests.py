@@ -136,13 +136,18 @@ class JdSecKill(object):
         }
 
         resp = self.session.get(url=url, params=payload, headers=headers)
-        resp_json = parse_json(resp.text)
+
+        try_count = 5
+        while not resp.text.startswith("jQuery"):
+            try_count = try_count - 1
+            if try_count > 0:
+                resp = self.session.get(url=url, params=payload, headers=headers)
+            else:
+                break
+            self.wati_some_time()
         # 响应中包含了许多用户信息，现在在其中返回昵称
         # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
-        # nick_name = resp_json.get('nickName')
-        # if not nick_name:
-        #     raise Exception(f"获取用户昵称失败！")
-        return resp_json.get('nickName')
+        return parse_json(resp.text).get('nickName')
 
     def get_seckill_url(self):
         """获取商品的抢购链接
