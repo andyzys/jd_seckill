@@ -65,8 +65,9 @@ class JdSeckill(object):
         while True:
             try:
                 self.request_seckill_url()
-                self.request_seckill_checkout_page()
-                self.submit_seckill_order()
+                while True:
+                    self.request_seckill_checkout_page()
+                    self.submit_seckill_order()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             self.wati_some_time()
