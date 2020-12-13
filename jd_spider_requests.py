@@ -33,6 +33,9 @@ class JdSeckill(object):
         """
         self.__seckill()
 
+    def system_exit(self):
+        sys.exit(1)
+
     def wait_some_time(self):
         time.sleep(random.randint(100, 300) / 1000)
 
@@ -67,7 +70,8 @@ class JdSeckill(object):
                 self.request_seckill_url()
                 while True:
                     self.request_seckill_checkout_page()
-                    self.submit_seckill_order()
+                    if self.submit_seckill_order():
+                        self.system_exit()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             self.wait_some_time()
@@ -94,7 +98,7 @@ class JdSeckill(object):
                 logger.info('第【%s】次失败请重新获取cookie', flag)
                 time.sleep(1)
                 continue
-        sys.exit(1)
+        self.system_exit()
 
     def make_reserve(self):
         """商品预约"""
