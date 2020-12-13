@@ -33,7 +33,7 @@ class JdSeckill(object):
         """
         self.__seckill()
 
-    def wati_some_time(self):
+    def wait_some_time(self):
         time.sleep(random.randint(100, 300) / 1000)
 
     def seckill_by_proc_pool(self, work_count=5):
@@ -55,7 +55,7 @@ class JdSeckill(object):
                 self.make_reserve()
             except Exception as e:
                 logger.info('预约发生异常!', e)
-            self.wati_some_time()
+            self.wait_some_time()
 
     def __seckill(self):
         """
@@ -70,7 +70,7 @@ class JdSeckill(object):
                     self.submit_seckill_order()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
-            self.wati_some_time()
+            self.wait_some_time()
 
     def login(self):
         for flag in range(1, 3):
@@ -145,7 +145,7 @@ class JdSeckill(object):
                 resp = self.session.get(url=url, params=payload, headers=headers)
             else:
                 break
-            self.wati_some_time()
+            self.wait_some_time()
         # 响应中包含了许多用户信息，现在在其中返回昵称
         # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
         return parse_json(resp.text).get('nickName')
@@ -182,7 +182,7 @@ class JdSeckill(object):
                 return seckill_url
             else:
                 logger.info("抢购链接获取失败，稍后自动重试")
-                self.wati_some_time()
+                self.wait_some_time()
 
     def request_seckill_url(self):
         """访问商品的抢购链接（用于设置cookie等"""
