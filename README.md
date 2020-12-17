@@ -99,8 +99,7 @@
 
 ## 打赏
 要是客官抢到了茅台，心情好，请我喝一杯咖啡好不好:)  
-![微信收款二维码](https://github.com/huanghyw/jd_seckill/blob/master/resource/IMG_9210.JPG)
-![支付宝收款二维码](https://github.com/huanghyw/jd_seckill/blob/master/resource/IMG_9209.PNG)
+![收款二维码](https://github.com/huanghyw/jd_seckill/blob/master/resource/payment_code.png)
 
 
 ## 感谢
