@@ -46,8 +46,9 @@
 `pip install -r requirements.txt`
 
 ## 使用教程  
-#### 1. 网页扫码登录，或者账号密码登录
-#### 2. 填写config.ini配置信息 
+#### 1. 推荐Chrome浏览器
+#### 2. 网页扫码登录，或者账号密码登录
+#### 3. 填写config.ini配置信息 
 (1)`eid`和`fp`找个普通商品随便下单,然后抓包就能看到,这两个值可以填固定的 
 > 随便找一个商品下单，然后进入结算页面，打开浏览器的调试窗口，切换到控制台Tab页，在控制台中输入变量`_JdTdudfp`，即可从输出的Json中获取`eid`和`fp`。  
 > 不会的话参考原作者的issue https://github.com/zhou-xiaojun/jd_mask/issues/22
@@ -63,7 +64,7 @@
  
 以上都是必须的.
 
-#### 3.运行main.py 
+#### 4.运行main.py 
 根据提示选择相应功能即可
 
 ## 感谢
