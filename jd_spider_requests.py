@@ -1,12 +1,19 @@
 import random
 import sys
 import time
+import requests
+import functools
+import json
+import os
+import pickle
+
+from lxml import etree
 from jd_logger import logger
 from timer import Timer
-import requests
-from util import parse_json, get_session, get_sku_title,send_wechat
+from util import parse_json, send_wechat, get_session, response_status, save_image, open_image
 from config import global_config
 from concurrent.futures import ProcessPoolExecutor
+from exception import SKException
 
 
 class JdSeckill(object):
@@ -20,6 +27,11 @@ class JdSeckill(object):
         self.seckill_order_data = dict()
         self.timers = Timer()
         self.default_user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
+        self.headers = {'User-Agent': self.default_user_agent}
+        self.is_login = False
+        self.nick_name = None
+
+        self._load_cookies()
 
     def reserve(self):
         """
@@ -32,9 +44,6 @@ class JdSeckill(object):
         抢购
         """
         self.__seckill()
-
-    def system_exit(self):
-        sys.exit(1)
 
     def wait_some_time(self):
         time.sleep(random.randint(100, 300) / 1000)
@@ -52,7 +61,7 @@ class JdSeckill(object):
         """
         预约
         """
-        self.login()
+        self._validate_cookies()
         while True:
             try:
                 self.make_reserve()
@@ -64,45 +73,178 @@ class JdSeckill(object):
         """
         抢购
         """
-        self.login()
+        self._validate_cookies()
         while True:
             try:
                 self.request_seckill_url()
                 while True:
                     self.request_seckill_checkout_page()
-                    if self.submit_seckill_order():
-                        self.system_exit()
+                    self.submit_seckill_order()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             self.wait_some_time()
 
-    def login(self):
-        for flag in range(1, 3):
-            try:
-                targetURL = 'https://order.jd.com/center/list.action'
-                payload = {
-                    'rid': str(int(time.time() * 1000)),
-                }
-                resp = self.session.get(
-                    url=targetURL, params=payload, allow_redirects=False)
-                if resp.status_code == requests.codes.OK:
-                    logger.info('校验是否登录[成功]')
-                    logger.info('用户:{}'.format(self.get_username()))
-                    return True
-                else:
-                    logger.info('校验是否登录[失败]')
-                    logger.info('请重新输入cookie')
-                    time.sleep(1)
-                    continue
-            except Exception as e:
-                logger.info('第【%s】次失败请重新获取cookie', flag)
-                time.sleep(1)
-                continue
-        self.system_exit()
+    def _load_cookies(self):
+        cookies_file = ''
+        for name in os.listdir('./cookies'):
+            if name.endswith('.cookies'):
+                cookies_file = './cookies/{0}'.format(name)
+                break
+        if cookies_file == '':
+            return
+        with open(cookies_file, 'rb') as f:
+            local_cookies = pickle.load(f)
+        self.session.cookies.update(local_cookies)
+        self.is_login = self._validate_cookies()
+
+    def _save_cookies(self):
+        cookies_file = './cookies/{0}.cookies'.format(self.nick_name)
+        directory = os.path.dirname(cookies_file)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(cookies_file, 'wb') as f:
+            pickle.dump(self.session.cookies, f)
+
+    def _validate_cookies(self):
+        """验证cookies是否有效（是否登陆）
+                通过访问用户订单列表页进行判断：若未登录，将会重定向到登陆页面。
+                :return: cookies是否有效 True/False
+                """
+        url = 'https://order.jd.com/center/list.action'
+        payload = {
+            'rid': str(int(time.time() * 1000)),
+        }
+        try:
+            resp = self.session.get(url=url, params=payload, allow_redirects=False)
+            if resp.status_code == requests.codes.OK:
+                return True
+        except Exception as e:
+            logger.error(e)
+
+        self.session = get_session()
+        return False
+
+    def _get_login_page(self):
+        url = "https://passport.jd.com/new/login.aspx"
+        page = self.session.get(url, headers=self.headers)
+        return page
+
+    def _get_QRcode(self):
+        url = 'https://qr.m.jd.com/show'
+        payload = {
+            'appid': 133,
+            'size': 147,
+            't': str(int(time.time() * 1000)),
+        }
+        headers = {
+            'User-Agent': self.default_user_agent,
+            'Referer': 'https://passport.jd.com/new/login.aspx',
+        }
+        resp = self.session.get(url=url, headers=headers, params=payload)
+
+        if not response_status(resp):
+            logger.info('获取二维码失败')
+            return False
+
+        QRCode_file = 'QRcode.png'
+        save_image(resp, QRCode_file)
+        logger.info('二维码获取成功，请打开京东APP扫描')
+        open_image(QRCode_file)
+        return True
+
+    def check_login(func):
+        """用户登陆态校验装饰器。若用户未登陆，则调用扫码登陆"""
+
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            if not self.is_login:
+                logger.info("{0} 需登陆后调用，开始扫码登陆".format(func.__name__))
+                self.login_by_QRcode()
+            return func(self, *args, **kwargs)
+
+        return new_func
+
+    def _get_QRcode_ticket(self):
+        url = 'https://qr.m.jd.com/check'
+        payload = {
+            'appid': '133',
+            'callback': 'jQuery{}'.format(random.randint(1000000, 9999999)),
+            'token': self.session.cookies.get('wlfstk_smdl'),
+            '_': str(int(time.time() * 1000)),
+        }
+        headers = {
+            'User-Agent': self.default_user_agent,
+            'Referer': 'https://passport.jd.com/new/login.aspx',
+        }
+        resp = self.session.get(url=url, headers=headers, params=payload)
+
+        if not response_status(resp):
+            logger.error('获取二维码扫描结果异常')
+            return False
+
+        resp_json = parse_json(resp.text)
+        if resp_json['code'] != 200:
+            logger.info('Code: %s, Message: %s', resp_json['code'], resp_json['msg'])
+            return None
+        else:
+            logger.info('已完成手机客户端确认')
+            return resp_json['ticket']
+
+    def _validate_QRcode_ticket(self, ticket):
+        url = 'https://passport.jd.com/uc/qrCodeTicketValidation'
+        headers = {
+            'User-Agent': self.default_user_agent,
+            'Referer': 'https://passport.jd.com/uc/login?ltype=logout',
+        }
+        resp = self.session.get(url=url, headers=headers, params={'t': ticket})
+
+        if not response_status(resp):
+            return False
+
+        resp_json = json.loads(resp.text)
+        if resp_json['returnCode'] == 0:
+            return True
+        else:
+            logger.info(resp_json)
+            return False
+
+    def login_by_QRcode(self):
+        """二维码登陆
+        :return:
+        """
+        if self.is_login:
+            logger.info('登录成功')
+            return
+
+        self._get_login_page()
+
+        # download QR code
+        if not self._get_QRcode():
+            raise SKException('二维码下载失败')
+
+        # get QR code ticket
+        ticket = None
+        retry_times = 85
+        for _ in range(retry_times):
+            ticket = self._get_QRcode_ticket()
+            if ticket:
+                break
+            time.sleep(2)
+        else:
+            raise SKException('二维码过期，请重新获取扫描')
+
+        # validate QR code ticket
+        if not self._validate_QRcode_ticket(ticket):
+            raise SKException('二维码信息校验失败')
+
+        logger.info('二维码登录成功')
+        self.is_login = True
+        self.nick_name = self.get_username()
+        self._save_cookies()
 
     def make_reserve(self):
         """商品预约"""
-        logger.info('商品名称:{}'.format(get_sku_title()))
+        logger.info('商品名称:{}'.format(self.get_sku_title()))
         url = 'https://yushou.jd.com/youshouinfo.action?'
         payload = {
             'callback': 'fetchJSON',
@@ -154,6 +296,14 @@ class JdSeckill(object):
         # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
         return parse_json(resp.text).get('nickName')
 
+    def get_sku_title(self):
+        """获取商品名称"""
+        url = 'https://item.jd.com/{}.html'.format(global_config.getRaw('config', 'sku_id'))
+        resp = self.session.get(url).content
+        x_data = etree.HTML(resp)
+        sku_title = x_data.xpath('/html/head/title/text()')
+        return sku_title[0]
+
     def get_seckill_url(self):
         """获取商品的抢购链接
         点击"抢购"按钮后，会有两次302跳转，最后到达订单结算页面
@@ -191,7 +341,7 @@ class JdSeckill(object):
     def request_seckill_url(self):
         """访问商品的抢购链接（用于设置cookie等"""
         logger.info('用户:{}'.format(self.get_username()))
-        logger.info('商品名称:{}'.format(get_sku_title()))
+        logger.info('商品名称:{}'.format(self.get_sku_title()))
         self.timers.start()
         self.seckill_url[self.sku_id] = self.get_seckill_url()
         logger.info('访问商品的抢购连接...')
