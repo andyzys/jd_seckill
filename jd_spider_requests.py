@@ -86,10 +86,11 @@ class JdSeckill(object):
 
     def _load_cookies(self):
         cookies_file = ''
-        for name in os.listdir('./cookies'):
-            if name.endswith('.cookies'):
-                cookies_file = './cookies/{0}'.format(name)
-                break
+        if os.path.exists('./cookies'):
+            for name in os.listdir('./cookies'):
+                if name.endswith('.cookies'):
+                    cookies_file = './cookies/{0}'.format(name)
+                    break
         if cookies_file == '':
             return
         with open(cookies_file, 'rb') as f:
