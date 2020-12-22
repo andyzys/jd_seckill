@@ -30,9 +30,9 @@ class SpiderSession:
         self.cookies_dir_path = "./cookies/"
         self.user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
 
-        self.session = self.__init_session()
+        self.session = self._init_session()
 
-    def __init_session(self):
+    def _init_session(self):
         session = requests.session()
         session.headers = self.get_headers()
         return session
