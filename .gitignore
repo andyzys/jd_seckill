@@ -117,7 +117,7 @@ logs/
 test/
 cookies/
 *.cookies
-QRcode.png
+qr_code.png
 
 # jupyter
 .ipynb_checkpoints
