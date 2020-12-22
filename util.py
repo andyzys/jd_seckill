@@ -73,21 +73,6 @@ def get_random_useragent():
     return random.choice(USER_AGENTS)
 
 
-def get_session():
-    # 初始化session
-    session = requests.session()
-    session.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                       "Connection": "keep-alive"}
-    # checksession = requests.session()
-    # checksession.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-    #                         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-    #                         "Connection": "keep-alive"}
-    # 获取cookies保存到session
-    # session.cookies = get_cookies()
-    return session
-
-
 def wait_some_time():
     time.sleep(random.randint(100, 300) / 1000)
 
