@@ -1,8 +1,10 @@
 import json
 import random
 import requests
+import os
+import time
+
 from config import global_config
-from lxml import etree
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
@@ -57,10 +59,12 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.14 (KHTML, like Gecko) Chrome/24.0.1292.0 Safari/537.14"
     ]
 
+
 def parse_json(s):
     begin = s.find('{')
     end = s.rfind('}') + 1
     return json.loads(s[begin:end])
+
 
 def get_random_useragent():
     """生成随机的UserAgent
@@ -68,39 +72,10 @@ def get_random_useragent():
     """
     return random.choice(USER_AGENTS)
 
-def get_cookies():
-    """解析cookies内容并添加到cookiesJar"""
-    manual_cookies = {}
-    for item in global_config.getRaw('config','cookies_String').split(';'):
-        name, value = item.strip().split('=', 1)
-        # 用=号分割，分割1次
-        manual_cookies[name] = value
-        # 为字典cookies添加内容
-    cookiesJar = requests.utils.cookiejar_from_dict(manual_cookies, cookiejar=None, overwrite=True)
-    return cookiesJar
 
-def get_session():
-    # 初始化session
-    session = requests.session()
-    session.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                       "Connection": "keep-alive"}
-    checksession = requests.session()
-    checksession.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                            "Connection": "keep-alive"}
-    # 获取cookies保存到session
-    session.cookies = get_cookies()
-    return session
+def wait_some_time():
+    time.sleep(random.randint(100, 300) / 1000)
 
-def get_sku_title():
-    """获取商品名称"""
-    url = 'https://item.jd.com/{}.html'.format(global_config.getRaw('config','sku_id'))
-    session = get_session()
-    resp = session.get(url).content
-    x_data = etree.HTML(resp)
-    sku_title = x_data.xpath('/html/head/title/text()')
-    return sku_title[0]
 
 def send_wechat(message):
     """推送信息到微信"""
@@ -113,3 +88,29 @@ def send_wechat(message):
         'User-Agent':global_config.getRaw('config', 'DEFAULT_USER_AGENT')
     }
     requests.get(url, params=payload, headers=headers)
+
+
+def response_status(resp):
+    if resp.status_code != requests.codes.OK:
+        print('Status: %u, Url: %s' % (resp.status_code, resp.url))
+        return False
+    return True
+
+
+def open_image(image_file):
+    if os.name == "nt":
+        os.system('start ' + image_file)  # for Windows
+    else:
+        if os.uname()[0] == "Linux":
+            if "deepin" in os.uname()[2]:
+                os.system("deepin-image-viewer " + image_file)  # for deepin
+            else:
+                os.system("eog " + image_file)  # for Linux
+        else:
+            os.system("open " + image_file)  # for Mac
+
+
+def save_image(resp, image_file):
+    with open(image_file, 'wb') as f:
+        for chunk in resp.iter_content(chunk_size=1024):
+            f.write(chunk)

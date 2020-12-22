@@ -115,6 +115,9 @@ venv.bak/
 logs/
 .test
 test/
+cookies/
+*.cookies
+qr_code.png
 
 # jupyter
 .ipynb_checkpoints
