@@ -27,6 +27,7 @@
 通过我这段时间的使用（2020-12-12至2020-12-17），证实这个脚本确实能抢到茅台。我自己三个账号抢了四瓶，帮两个朋友抢了4瓶。
 大家只要确认自己配置文件没有问题，Cookie没有失效，坚持下去总能成功的。
 
+
 ## 暗中观察
 
 根据12月14日以来抢茅台的日志分析，大胆推断再接再厉返回Json消息中`resultCode`与小白信用的关系。  
@@ -83,10 +84,8 @@
 > 随便找一个商品下单，然后进入结算页面，打开浏览器的调试窗口，切换到控制台Tab页，在控制台中输入变量`_JdTdudfp`，即可从输出的Json中获取`eid`和`fp`。  
 > 不会的话参考原作者的issue https://github.com/zhou-xiaojun/jd_mask/issues/22
 
-(2)`cookies_String`,`sku_id`,`DEFAULT_USER_AGENT`(和cookie获取同一个地方就会看到.直接复制进去就可以了) 
-> 这里注意每次扫码登陆后都需要重新获取cookies_string,其他两个不用  
-> `cookies_string` 就是`http request header`里面的`cookie`
-> Cookie最好在订单结算页面获取  
+(2)`sku_id`,`DEFAULT_USER_AGENT`(`user-agent`在cookie获取的那个地方就会看到.直接复制进去就可以了) 
+> `cookies_string` 现在已经不需要填写了
 > sku_id我已经按照茅台的填好 
 
 (3)配置一下时间
