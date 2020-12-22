@@ -22,18 +22,25 @@ class SpiderSession:
     """
     def __init__(self):
         self.cookies_dir_path = "./cookies/"
-        self.is_login = False
+        self.user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
+
         self.session = self.__init_session()
 
     def __init_session(self):
         session = requests.session()
-        session.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                           "Accept": "text/html,application/xhtml+xml,application/xml;"
-                                     "q=0.9,image/webp,image/apng,*/*;"
-                                     "q=0.8,application/signed-exchange;"
-                                     "v=b3",
-                           "Connection": "keep-alive"}
+        session.headers = self.get_headers()
         return session
+
+    def get_headers(self):
+        return {"User-Agent": self.user_agent,
+                "Accept": "text/html,application/xhtml+xml,application/xml;"
+                          "q=0.9,image/webp,image/apng,*/*;"
+                          "q=0.8,application/signed-exchange;"
+                          "v=b3",
+                "Connection": "keep-alive"}
+
+    def get_user_agent(self):
+        return self.user_agent
 
     def get_session(self):
         """
@@ -52,9 +59,6 @@ class SpiderSession:
     def set_cookies(self, cookies):
         self.session.cookies.update(cookies)
 
-    def update_login_status(self):
-        self.is_login = self.__validate_cookies()
-
     def load_cookies_from_local(self):
         """
         从本地加载Cookie
@@ -72,7 +76,6 @@ class SpiderSession:
         with open(cookies_file, 'rb') as f:
             local_cookies = pickle.load(f)
         self.set_cookies(local_cookies)
-        self.update_login_status()
 
     def save_cookies_to_local(self, cookie_file_name):
         """
@@ -80,14 +83,35 @@ class SpiderSession:
         :param cookie_file_name: 存放Cookie的文件名称
         :return:
         """
-        cookies_file = '{}{}'.format(self.cookies_dir_path, cookie_file_name)
+        cookies_file = '{}{}.cookies'.format(self.cookies_dir_path, cookie_file_name)
         directory = os.path.dirname(cookies_file)
         if not os.path.exists(directory):
             os.makedirs(directory)
         with open(cookies_file, 'wb') as f:
             pickle.dump(self.get_cookies(), f)
 
-    def __validate_cookies(self):
+
+class QrLogin:
+    """
+    扫码登录
+    """
+    def __init__(self, spider_session: SpiderSession):
+        """
+        初始化扫码登录
+        :param spider_session:
+        """
+        self.qrcode_img_file = 'QRcode.png'
+
+        self.spider_session = spider_session
+        self.session = self.spider_session.get_session()
+
+        self.is_login = False
+        self.refresh_login_status()
+
+    def refresh_login_status(self):
+        self.is_login = self._validate_cookies()
+
+    def _validate_cookies(self):
         """
         验证cookies是否有效（是否登陆）
         通过访问用户订单列表页进行判断：若未登录，将会重定向到登陆页面。
@@ -105,81 +129,16 @@ class SpiderSession:
             logger.error("验证cookies是否有效发生异常", e)
         return False
 
-
-class JdSeckill(object):
-    def __init__(self):
-        self.spider_session = SpiderSession()
-        self.spider_session.load_cookies_from_local()
-        self.session = self.spider_session.get_session()
-
-        # 初始化信息
-        # self.session = get_session()
-        self.sku_id = global_config.getRaw('config', 'sku_id')
-        self.seckill_num = 2
-        self.seckill_init_info = dict()
-        self.seckill_url = dict()
-        self.seckill_order_data = dict()
-        self.timers = Timer()
-        self.default_user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
-        self.headers = {'User-Agent': self.default_user_agent}
-        self.is_login = False
-        self.nick_name = None
-
-    def reserve(self):
-        """
-        预约
-        """
-        self.__reserve()
-
-    def seckill(self):
-        """
-        抢购
-        """
-        self.__seckill()
-
-    def wait_some_time(self):
-        time.sleep(random.randint(100, 300) / 1000)
-
-    def seckill_by_proc_pool(self, work_count=5):
-        """
-        多进程进行抢购
-        work_count：进程数量
-        """
-        with ProcessPoolExecutor(work_count) as pool:
-            for i in range(work_count):
-                pool.submit(self.seckill)
-
-    def __reserve(self):
-        """
-        预约
-        """
-        while True:
-            try:
-                self.make_reserve()
-            except Exception as e:
-                logger.info('预约发生异常!', e)
-            self.wait_some_time()
-
-    def __seckill(self):
-        """
-        抢购
-        """
-        while True:
-            try:
-                self.request_seckill_url()
-                while True:
-                    self.request_seckill_checkout_page()
-                    self.submit_seckill_order()
-            except Exception as e:
-                logger.info('抢购发生异常，稍后继续执行！', e)
-            self.wait_some_time()
-
     def _get_login_page(self):
+        """
+        获取PC端登录页面
+        :return:
+        """
         url = "https://passport.jd.com/new/login.aspx"
-        page = self.session.get(url, headers=self.headers)
+        page = self.session.get(url, headers=self.spider_session.get_headers())
         return page
 
-    def _get_QRcode(self):
+    def _get_qrcode(self):
         url = 'https://qr.m.jd.com/show'
         payload = {
             'appid': 133,
@@ -187,7 +146,7 @@ class JdSeckill(object):
             't': str(int(time.time() * 1000)),
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.spider_session.get_user_agent(),
             'Referer': 'https://passport.jd.com/new/login.aspx',
         }
         resp = self.session.get(url=url, headers=headers, params=payload)
@@ -196,25 +155,12 @@ class JdSeckill(object):
             logger.info('获取二维码失败')
             return False
 
-        QRCode_file = 'QRcode.png'
-        save_image(resp, QRCode_file)
+        save_image(resp, self.qrcode_img_file)
         logger.info('二维码获取成功，请打开京东APP扫描')
-        open_image(QRCode_file)
+        open_image(self.qrcode_img_file)
         return True
 
-    def check_login(func):
-        """用户登陆态校验装饰器。若用户未登陆，则调用扫码登陆"""
-
-        @functools.wraps(func)
-        def new_func(self, *args, **kwargs):
-            if not self.is_login:
-                logger.info("{0} 需登陆后调用，开始扫码登陆".format(func.__name__))
-                self.login_by_QRcode()
-            return func(self, *args, **kwargs)
-
-        return new_func
-
-    def _get_QRcode_ticket(self):
+    def _get_qrcode_ticket(self):
         url = 'https://qr.m.jd.com/check'
         payload = {
             'appid': '133',
@@ -223,7 +169,7 @@ class JdSeckill(object):
             '_': str(int(time.time() * 1000)),
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.spider_session.get_user_agent(),
             'Referer': 'https://passport.jd.com/new/login.aspx',
         }
         resp = self.session.get(url=url, headers=headers, params=payload)
@@ -240,14 +186,14 @@ class JdSeckill(object):
             logger.info('已完成手机客户端确认')
             return resp_json['ticket']
 
-    def _validate_QRcode_ticket(self, ticket):
+    def _validate_qrcode_ticket(self, ticket):
         url = 'https://passport.jd.com/uc/qrCodeTicketValidation'
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.spider_session.get_user_agent(),
             'Referer': 'https://passport.jd.com/uc/login?ltype=logout',
         }
-        resp = self.session.get(url=url, headers=headers, params={'t': ticket})
 
+        resp = self.session.get(url=url, headers=headers, params={'t': ticket})
         if not response_status(resp):
             return False
 
@@ -258,25 +204,22 @@ class JdSeckill(object):
             logger.info(resp_json)
             return False
 
-    def login_by_QRcode(self):
-        """二维码登陆
+    def login_by_qrcode(self):
+        """
+        二维码登陆
         :return:
         """
-        if self.spider_session.is_login:
-            logger.info('登录成功')
-            return
-
         self._get_login_page()
 
         # download QR code
-        if not self._get_QRcode():
+        if not self._get_qrcode():
             raise SKException('二维码下载失败')
 
         # get QR code ticket
         ticket = None
         retry_times = 85
         for _ in range(retry_times):
-            ticket = self._get_QRcode_ticket()
+            ticket = self._get_qrcode_ticket()
             if ticket:
                 break
             time.sleep(2)
@@ -284,14 +227,113 @@ class JdSeckill(object):
             raise SKException('二维码过期，请重新获取扫描')
 
         # validate QR code ticket
-        if not self._validate_QRcode_ticket(ticket):
+        if not self._validate_qrcode_ticket(ticket):
             raise SKException('二维码信息校验失败')
 
+        self.refresh_login_status()
+
         logger.info('二维码登录成功')
-        # self.is_login = True
-        self.nick_name = self.get_username()
-        self.spider_session.update_login_status()
-        self.spider_session.save_cookies_to_local(self.nick_name)
+
+
+class JdSeckill(object):
+    def __init__(self):
+        self.spider_session = SpiderSession()
+        self.spider_session.load_cookies_from_local()
+
+        self.qrlogin = QrLogin(self.spider_session)
+
+        # 初始化信息
+        self.sku_id = global_config.getRaw('config', 'sku_id')
+        self.seckill_num = 2
+        self.seckill_init_info = dict()
+        self.seckill_url = dict()
+        self.seckill_order_data = dict()
+        self.timers = Timer()
+
+        self.session = self.spider_session.get_session()
+        self.user_agent = self.spider_session.user_agent
+        self.nick_name = None
+
+    def login_by_qrcode(self):
+        """
+        二维码登陆
+        :return:
+        """
+        if self.qrlogin.is_login:
+            logger.info('登录成功')
+            return
+
+        self.qrlogin.login_by_qrcode()
+
+        if self.qrlogin.is_login:
+            self.nick_name = self.get_username()
+            self.spider_session.save_cookies_to_local(self.nick_name)
+        else:
+            raise SKException("二维码登录失败！")
+
+    def check_login(func):
+        """
+        用户登陆态校验装饰器。若用户未登陆，则调用扫码登陆
+        """
+        @functools.wraps(func)
+        def new_func(self, *args, **kwargs):
+            if not self.qrlogin.is_login:
+                logger.info("{0} 需登陆后调用，开始扫码登陆".format(func.__name__))
+                self.login_by_qrcode()
+            return func(self, *args, **kwargs)
+        return new_func
+
+    @check_login
+    def reserve(self):
+        """
+        预约
+        """
+        self._reserve()
+
+    @check_login
+    def seckill(self):
+        """
+        抢购
+        """
+        self._seckill()
+
+    @check_login
+    def seckill_by_proc_pool(self, work_count=5):
+        """
+        多进程进行抢购
+        work_count：进程数量
+        """
+        with ProcessPoolExecutor(work_count) as pool:
+            for i in range(work_count):
+                pool.submit(self.seckill)
+
+    def wait_some_time(self):
+        time.sleep(random.randint(100, 300) / 1000)
+
+    def _reserve(self):
+        """
+        预约
+        """
+        while True:
+            try:
+                self.make_reserve()
+            except Exception as e:
+                logger.info('预约发生异常!', e)
+            self.wait_some_time()
+
+    def _seckill(self):
+        """
+        抢购
+        """
+        while True:
+            try:
+                self.request_seckill_url()
+                while True:
+                    self.request_seckill_checkout_page()
+                    self.submit_seckill_order()
+            except Exception as e:
+                logger.info('抢购发生异常，稍后继续执行！', e)
+            self.wait_some_time()
 
     def make_reserve(self):
         """商品预约"""
@@ -303,7 +345,7 @@ class JdSeckill(object):
             '_': str(int(time.time() * 1000)),
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
         resp = self.session.get(url=url, params=payload, headers=headers)
@@ -329,7 +371,7 @@ class JdSeckill(object):
             '_': str(int(time.time() * 1000)),
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Referer': 'https://order.jd.com/center/list.action',
         }
 
@@ -369,7 +411,7 @@ class JdSeckill(object):
             '_': str(int(time.time() * 1000)),
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Host': 'itemko.jd.com',
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
@@ -397,7 +439,7 @@ class JdSeckill(object):
         self.seckill_url[self.sku_id] = self.get_seckill_url()
         logger.info('访问商品的抢购连接...')
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
@@ -417,7 +459,7 @@ class JdSeckill(object):
             'rid': int(time.time())
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
@@ -435,7 +477,7 @@ class JdSeckill(object):
             'isModifyAddress': 'false',
         }
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
         }
         resp = self.session.post(url=url, data=data, headers=headers)
@@ -500,7 +542,7 @@ class JdSeckill(object):
         self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
         logger.info('提交抢购订单...')
         headers = {
-            'User-Agent': self.default_user_agent,
+            'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
             'Referer': 'https://marathon.jd.com/seckill/seckill.action?skuId={0}&num={1}&rid={2}'.format(
                 self.sku_id, self.seckill_num, int(time.time())),
