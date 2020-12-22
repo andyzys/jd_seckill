@@ -2,6 +2,7 @@ import json
 import random
 import requests
 import os
+import time
 
 from config import global_config
 
@@ -85,6 +86,10 @@ def get_session():
     # 获取cookies保存到session
     # session.cookies = get_cookies()
     return session
+
+
+def wait_some_time():
+    time.sleep(random.randint(100, 300) / 1000)
 
 
 def send_wechat(message):

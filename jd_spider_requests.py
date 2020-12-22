@@ -10,7 +10,7 @@ import pickle
 from lxml import etree
 from jd_logger import logger
 from timer import Timer
-from util import parse_json, send_wechat, get_session, response_status, save_image, open_image
+from util import parse_json, send_wechat, wait_some_time, response_status, save_image, open_image
 from config import global_config
 from concurrent.futures import ProcessPoolExecutor
 from exception import SKException
@@ -307,9 +307,6 @@ class JdSeckill(object):
             for i in range(work_count):
                 pool.submit(self.seckill)
 
-    def wait_some_time(self):
-        time.sleep(random.randint(100, 300) / 1000)
-
     def _reserve(self):
         """
         预约
@@ -319,7 +316,7 @@ class JdSeckill(object):
                 self.make_reserve()
             except Exception as e:
                 logger.info('预约发生异常!', e)
-            self.wait_some_time()
+            wait_some_time()
 
     def _seckill(self):
         """
@@ -333,7 +330,7 @@ class JdSeckill(object):
                     self.submit_seckill_order()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
-            self.wait_some_time()
+            wait_some_time()
 
     def make_reserve(self):
         """商品预约"""
@@ -384,7 +381,7 @@ class JdSeckill(object):
                 resp = self.session.get(url=url, params=payload, headers=headers)
             else:
                 break
-            self.wait_some_time()
+            wait_some_time()
         # 响应中包含了许多用户信息，现在在其中返回昵称
         # jQuery2381773({"imgUrl":"//storage.360buyimg.com/i.imageUpload/xxx.jpg","lastLoginTime":"","nickName":"xxx","plusStatus":"0","realName":"xxx","userLevel":x,"userScoreVO":{"accountScore":xx,"activityScore":xx,"consumptionScore":xxxxx,"default":false,"financeScore":xxx,"pin":"xxx","riskScore":x,"totalScore":xxxxx}})
         return parse_json(resp.text).get('nickName')
@@ -429,7 +426,7 @@ class JdSeckill(object):
                 return seckill_url
             else:
                 logger.info("抢购链接获取失败，稍后自动重试")
-                self.wait_some_time()
+                wait_some_time()
 
     def request_seckill_url(self):
         """访问商品的抢购链接（用于设置cookie等"""
