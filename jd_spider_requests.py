@@ -577,7 +577,12 @@ class JdSeckill(object):
             data=self.seckill_order_data.get(
                 self.sku_id),
             headers=headers)
-        resp_json = parse_json(resp.text)
+        resp_json = None
+        try:
+            resp_json = parse_json(resp.text)
+        except Exception as e:
+            logger.info('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
+            return False
         # 返回信息
         # 抢购失败：
         # {'errorMessage': '很遗憾没有抢到，再接再厉哦。', 'orderId': 0, 'resultCode': 60074, 'skuId': 0, 'success': False}
