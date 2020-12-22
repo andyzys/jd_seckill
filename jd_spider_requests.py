@@ -104,9 +104,13 @@ class QrLogin:
     def __init__(self, spider_session: SpiderSession):
         """
         初始化扫码登录
+        大致流程：
+            1、访问登录二维码页面，获取Token
+            2、使用Token获取票据
+            3、校验票据
         :param spider_session:
         """
-        self.qrcode_img_file = 'QRcode.png'
+        self.qrcode_img_file = 'qr_code.png'
 
         self.spider_session = spider_session
         self.session = self.spider_session.get_session()
@@ -115,6 +119,10 @@ class QrLogin:
         self.refresh_login_status()
 
     def refresh_login_status(self):
+        """
+        刷新是否登录状态
+        :return:
+        """
         self.is_login = self._validate_cookies()
 
     def _validate_cookies(self):
@@ -145,6 +153,10 @@ class QrLogin:
         return page
 
     def _get_qrcode(self):
+        """
+        缓存并展示登录二维码
+        :return:
+        """
         url = 'https://qr.m.jd.com/show'
         payload = {
             'appid': 133,
@@ -167,6 +179,10 @@ class QrLogin:
         return True
 
     def _get_qrcode_ticket(self):
+        """
+        通过 token 获取票据
+        :return:
+        """
         url = 'https://qr.m.jd.com/check'
         payload = {
             'appid': '133',
@@ -193,6 +209,11 @@ class QrLogin:
             return resp_json['ticket']
 
     def _validate_qrcode_ticket(self, ticket):
+        """
+        通过已获取的票据进行校验
+        :param ticket: 已获取的票据
+        :return:
+        """
         url = 'https://passport.jd.com/uc/qrCodeTicketValidation'
         headers = {
             'User-Agent': self.spider_session.get_user_agent(),
