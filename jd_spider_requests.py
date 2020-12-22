@@ -23,9 +23,7 @@ class SpiderSession:
     def __init__(self):
         self.cookies_dir_path = "./cookies/"
         self.is_login = False
-
         self.session = self.__init_session()
-        self.load_cookies_from_local()
 
     def __init_session(self):
         session = requests.session()
@@ -66,7 +64,7 @@ class SpiderSession:
         if not os.path.exists(self.cookies_dir_path):
             return False
         for name in os.listdir(self.cookies_dir_path):
-            if name.endswith(self.cookies_dir_path):
+            if name.endswith(".cookies"):
                 cookies_file = '{}{}'.format(self.cookies_dir_path, name)
                 break
         if cookies_file == '':
@@ -110,8 +108,12 @@ class SpiderSession:
 
 class JdSeckill(object):
     def __init__(self):
+        self.spider_session = SpiderSession()
+        self.spider_session.load_cookies_from_local()
+        self.session = self.spider_session.get_session()
+
         # 初始化信息
-        self.session = get_session()
+        # self.session = get_session()
         self.sku_id = global_config.getRaw('config', 'sku_id')
         self.seckill_num = 2
         self.seckill_init_info = dict()
@@ -122,8 +124,6 @@ class JdSeckill(object):
         self.headers = {'User-Agent': self.default_user_agent}
         self.is_login = False
         self.nick_name = None
-
-        self._load_cookies()
 
     def reserve(self):
         """
@@ -153,7 +153,6 @@ class JdSeckill(object):
         """
         预约
         """
-        self._validate_cookies()
         while True:
             try:
                 self.make_reserve()
@@ -165,7 +164,6 @@ class JdSeckill(object):
         """
         抢购
         """
-        self._validate_cookies()
         while True:
             try:
                 self.request_seckill_url()
@@ -175,47 +173,6 @@ class JdSeckill(object):
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             self.wait_some_time()
-
-    def _load_cookies(self):
-        cookies_file = ''
-        if os.path.exists('./cookies'):
-            for name in os.listdir('./cookies'):
-                if name.endswith('.cookies'):
-                    cookies_file = './cookies/{0}'.format(name)
-                    break
-        if cookies_file == '':
-            return
-        with open(cookies_file, 'rb') as f:
-            local_cookies = pickle.load(f)
-        self.session.cookies.update(local_cookies)
-        self.is_login = self._validate_cookies()
-
-    def _save_cookies(self):
-        cookies_file = './cookies/{0}.cookies'.format(self.nick_name)
-        directory = os.path.dirname(cookies_file)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        with open(cookies_file, 'wb') as f:
-            pickle.dump(self.session.cookies, f)
-
-    def _validate_cookies(self):
-        """验证cookies是否有效（是否登陆）
-                通过访问用户订单列表页进行判断：若未登录，将会重定向到登陆页面。
-                :return: cookies是否有效 True/False
-                """
-        url = 'https://order.jd.com/center/list.action'
-        payload = {
-            'rid': str(int(time.time() * 1000)),
-        }
-        try:
-            resp = self.session.get(url=url, params=payload, allow_redirects=False)
-            if resp.status_code == requests.codes.OK:
-                return True
-        except Exception as e:
-            logger.error(e)
-
-        self.session = get_session()
-        return False
 
     def _get_login_page(self):
         url = "https://passport.jd.com/new/login.aspx"
@@ -305,7 +262,7 @@ class JdSeckill(object):
         """二维码登陆
         :return:
         """
-        if self.is_login:
+        if self.spider_session.is_login:
             logger.info('登录成功')
             return
 
@@ -331,9 +288,10 @@ class JdSeckill(object):
             raise SKException('二维码信息校验失败')
 
         logger.info('二维码登录成功')
-        self.is_login = True
+        # self.is_login = True
         self.nick_name = self.get_username()
-        self._save_cookies()
+        self.spider_session.update_login_status()
+        self.spider_session.save_cookies_to_local(self.nick_name)
 
     def make_reserve(self):
         """商品预约"""
