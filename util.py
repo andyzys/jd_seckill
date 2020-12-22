@@ -58,10 +58,12 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.14 (KHTML, like Gecko) Chrome/24.0.1292.0 Safari/537.14"
     ]
 
+
 def parse_json(s):
     begin = s.find('{')
     end = s.rfind('}') + 1
     return json.loads(s[begin:end])
+
 
 def get_random_useragent():
     """生成随机的UserAgent
@@ -69,17 +71,7 @@ def get_random_useragent():
     """
     return random.choice(USER_AGENTS)
 
-# def get_cookies():
-#     """解析cookies内容并添加到cookiesJar"""
-#     manual_cookies = {}
-#     for item in global_config.getRaw('config','cookies_String').split(';'):
-#         name, value = item.strip().split('=', 1)
-#         # 用=号分割，分割1次
-#         manual_cookies[name] = value
-#         # 为字典cookies添加内容
-#     cookiesJar = requests.utils.cookiejar_from_dict(manual_cookies, cookiejar=None, overwrite=True)
-#     return cookiesJar
-#
+
 def get_session():
     # 初始化session
     session = requests.session()
@@ -94,6 +86,7 @@ def get_session():
     # session.cookies = get_cookies()
     return session
 
+
 def send_wechat(message):
     """推送信息到微信"""
     url = 'http://sc.ftqq.com/{}.send'.format(global_config.getRaw('messenger', 'sckey'))
@@ -106,11 +99,13 @@ def send_wechat(message):
     }
     requests.get(url, params=payload, headers=headers)
 
+
 def response_status(resp):
     if resp.status_code != requests.codes.OK:
         print('Status: %u, Url: %s' % (resp.status_code, resp.url))
         return False
     return True
+
 
 def open_image(image_file):
     if os.name == "nt":
