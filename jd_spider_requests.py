@@ -16,6 +16,98 @@ from concurrent.futures import ProcessPoolExecutor
 from exception import SKException
 
 
+class SpiderSession:
+    """
+    Session相关操作
+    """
+    def __init__(self):
+        self.cookies_dir_path = "./cookies/"
+        self.is_login = False
+
+        self.session = self.__init_session()
+        self.load_cookies_from_local()
+
+    def __init_session(self):
+        session = requests.session()
+        session.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
+                           "Accept": "text/html,application/xhtml+xml,application/xml;"
+                                     "q=0.9,image/webp,image/apng,*/*;"
+                                     "q=0.8,application/signed-exchange;"
+                                     "v=b3",
+                           "Connection": "keep-alive"}
+        return session
+
+    def get_session(self):
+        """
+        获取当前Session
+        :return:
+        """
+        return self.session
+
+    def get_cookies(self):
+        """
+        获取当前Cookies
+        :return:
+        """
+        return self.get_session().cookies
+
+    def set_cookies(self, cookies):
+        self.session.cookies.update(cookies)
+
+    def update_login_status(self):
+        self.is_login = self.__validate_cookies()
+
+    def load_cookies_from_local(self):
+        """
+        从本地加载Cookie
+        :return:
+        """
+        cookies_file = ''
+        if not os.path.exists(self.cookies_dir_path):
+            return False
+        for name in os.listdir(self.cookies_dir_path):
+            if name.endswith(self.cookies_dir_path):
+                cookies_file = '{}{}'.format(self.cookies_dir_path, name)
+                break
+        if cookies_file == '':
+            return False
+        with open(cookies_file, 'rb') as f:
+            local_cookies = pickle.load(f)
+        self.set_cookies(local_cookies)
+        self.update_login_status()
+
+    def save_cookies_to_local(self, cookie_file_name):
+        """
+        保存Cookie到本地
+        :param cookie_file_name: 存放Cookie的文件名称
+        :return:
+        """
+        cookies_file = '{}{}'.format(self.cookies_dir_path, cookie_file_name)
+        directory = os.path.dirname(cookies_file)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(cookies_file, 'wb') as f:
+            pickle.dump(self.get_cookies(), f)
+
+    def __validate_cookies(self):
+        """
+        验证cookies是否有效（是否登陆）
+        通过访问用户订单列表页进行判断：若未登录，将会重定向到登陆页面。
+        :return: cookies是否有效 True/False
+        """
+        url = 'https://order.jd.com/center/list.action'
+        payload = {
+            'rid': str(int(time.time() * 1000)),
+        }
+        try:
+            resp = self.session.get(url=url, params=payload, allow_redirects=False)
+            if resp.status_code == requests.codes.OK:
+                return True
+        except Exception as e:
+            logger.error("验证cookies是否有效发生异常", e)
+        return False
+
+
 class JdSeckill(object):
     def __init__(self):
         # 初始化信息
