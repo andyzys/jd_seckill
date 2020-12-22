@@ -1,5 +1,4 @@
 import random
-import sys
 import time
 import requests
 import functools
@@ -10,10 +9,17 @@ import pickle
 from lxml import etree
 from jd_logger import logger
 from timer import Timer
-from util import parse_json, send_wechat, wait_some_time, response_status, save_image, open_image
 from config import global_config
 from concurrent.futures import ProcessPoolExecutor
 from exception import SKException
+from util import (
+    parse_json,
+    send_wechat,
+    wait_some_time,
+    response_status,
+    save_image,
+    open_image
+)
 
 
 class SpiderSession:
