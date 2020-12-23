@@ -549,7 +549,7 @@ class JdSeckill(object):
             'invoicePhone': invoice_info.get('invoicePhone', ''),
             'invoicePhoneKey': invoice_info.get('invoicePhoneKey', ''),
             'invoice': 'true' if invoice_info else 'false',
-            'password': '',
+            'password': global_config.get('account', 'payment_pwd'),
             'codTimeType': 3,
             'paymentType': 4,
             'areaCode': '',
@@ -560,6 +560,7 @@ class JdSeckill(object):
             'token': token,
             'pru': ''
         }
+
         return data
 
     def submit_seckill_order(self):
