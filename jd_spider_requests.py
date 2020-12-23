@@ -505,7 +505,14 @@ class JdSeckill(object):
             'Host': 'marathon.jd.com',
         }
         resp = self.session.post(url=url, data=data, headers=headers)
-        return parse_json(resp.text)
+
+        resp_json = None
+        try:
+            resp_json = parse_json(resp.text)
+        except Exception:
+            raise SKException('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
+
+        return resp_json
 
     def _get_seckill_order_data(self):
         """生成提交抢购订单所需的请求体参数
@@ -563,7 +570,12 @@ class JdSeckill(object):
         payload = {
             'skuId': self.sku_id,
         }
-        self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+        try:
+            self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+        except Exception as e:
+            logger.info('抢购失败，无法获取生成订单的基本信息，接口返回:【{}】'.format(str(e)))
+            return False
+
         logger.info('提交抢购订单...')
         headers = {
             'User-Agent': self.user_agent,
@@ -594,9 +606,7 @@ class JdSeckill(object):
             order_id = resp_json.get('orderId')
             total_money = resp_json.get('totalMoney')
             pay_url = 'https:' + resp_json.get('pcUrl')
-            logger.info(
-                '抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id,total_money,pay_url)
-                )
+            logger.info('抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id, total_money, pay_url))
             if global_config.getRaw('messenger', 'enable') == 'true':
                 success_message = "抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}".format(order_id, total_money, pay_url)
                 send_wechat(success_message)
