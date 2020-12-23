@@ -84,8 +84,9 @@
 > 随便找一个商品下单，然后进入结算页面，打开浏览器的调试窗口，切换到控制台Tab页，在控制台中输入变量`_JdTdudfp`，即可从输出的Json中获取`eid`和`fp`。  
 > 不会的话参考原作者的issue https://github.com/zhou-xiaojun/jd_mask/issues/22
 
-(2)`sku_id`,`DEFAULT_USER_AGENT`(`user-agent`在cookie获取的那个地方就会看到.直接复制进去就可以了) 
+(2)`sku_id`,`DEFAULT_USER_AGENT`  
 > `cookies_string` 现在已经不需要填写了
+> `DEFAULT_USER_AGENT` 可以用默认的
 > sku_id我已经按照茅台的填好 
 
 (3)配置一下时间
