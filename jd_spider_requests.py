@@ -391,7 +391,7 @@ class JdSeckill(object):
         """获取用户信息"""
         url = 'https://passport.jd.com/user/petName/getUserInfoForMiniJd.action'
         payload = {
-            'callback': 'jQuery'.format(random.randint(1000000, 9999999)),
+            'callback': 'jQuery{}'.format(random.randint(1000000, 9999999)),
             '_': str(int(time.time() * 1000)),
         }
         headers = {
