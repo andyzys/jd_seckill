@@ -341,6 +341,7 @@ class JdSeckill(object):
         while True:
             try:
                 self.make_reserve()
+                break
             except Exception as e:
                 logger.info('预约发生异常!', e)
             wait_some_time()
