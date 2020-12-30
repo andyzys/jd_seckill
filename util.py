@@ -126,6 +126,9 @@ def save_image(resp, image_file):
 class Email():
 
     def __init__(self, mail_user, mail_pwd, mail_host=''):
+        if global_config.getRaw('messenger', 'email_enable') == 'false':
+            return
+
         smtpObj = smtplib.SMTP()
         # 没传会自动判断 判断不出来默认QQ邮箱
         if mail_host:
