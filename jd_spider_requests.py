@@ -18,7 +18,8 @@ from util import (
     wait_some_time,
     response_status,
     save_image,
-    open_image
+    open_image,
+    email
 )
 
 
@@ -176,6 +177,9 @@ class QrLogin:
         save_image(resp, self.qrcode_img_file)
         logger.info('二维码获取成功，请打开京东APP扫描')
         open_image(self.qrcode_img_file)
+        if global_config.getRaw('messenger', 'email_enable') == 'true':
+            email.send('二维码获取成功，请打开京东APP扫描', "<img src='cid:qr_code.png'>", [email.mail_user], 'qr_code.png')
+
         return True
 
     def _get_qrcode_ticket(self):

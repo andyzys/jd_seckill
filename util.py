@@ -3,8 +3,15 @@ import random
 import requests
 import os
 import time
+import smtplib
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
 from config import global_config
+from jd_logger import logger
+
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
@@ -114,3 +121,65 @@ def save_image(resp, image_file):
     with open(image_file, 'wb') as f:
         for chunk in resp.iter_content(chunk_size=1024):
             f.write(chunk)
+
+
+class Email():
+
+    def __init__(self, mail_user, mail_pwd, mail_host=''):
+        smtpObj = smtplib.SMTP()
+        # 没传会自动判断 判断不出来默认QQ邮箱
+        if mail_host:
+            self.mail_host = mail_host
+        elif mail_user.endswith('163.com'):
+            self.mail_host = 'smtp.163.com'
+        elif mail_user.endswith(('sina.com', 'sina.cn')):
+            self.mail_host = 'smtp.163.com'
+        elif mail_user.endswith('qq.com'):
+            self.mail_host = 'smtp.qq.com'
+        elif mail_user.endswith('sohu.com'):
+            self.mail_host = 'smtp.sohu.com'
+        else:
+            self.mail_host = 'smtp.qq.com'
+        self.mail_user = mail_user
+        self.is_login = False
+        try:
+            smtpObj.connect(mail_host, 25)
+            smtpObj.login(mail_user, mail_pwd)
+            self.is_login = True
+        except Exception as e:
+            logger.info('邮箱登录失败!', e)
+        self.smtpObj = smtpObj
+
+    def send(self, title, msg, receivers: list, img=''):
+        """
+        发送smtp邮件至收件人
+        :param title:
+        :param msg: 如果发送图片，需在msg内嵌入<img src='cid:xxx'>，xxx为图片名
+        :param receivers:
+        :param img: 图片名
+        :return:
+        """
+        if self.is_login:
+            message = MIMEMultipart('alternative')
+            msg_html = MIMEText(msg, 'html', 'utf-8')
+            message.attach(msg_html)
+            message['Subject'] = title
+            message['From'] = self.mail_user
+            if img:
+                with open(img, "rb") as f:
+                    msg_img = MIMEImage(f.read())
+                msg_img.add_header('Content-ID', img)
+                message.attach(msg_img)
+            try:
+                self.smtpObj.sendmail(self.mail_user, receivers, message.as_string())
+            except Exception as e:
+                logger.info('邮件发送失败!', e)
+        else:
+            logger.info('邮箱未登录')
+
+
+email = Email(
+    mail_host=global_config.getRaw('messenger', 'email_host'),
+    mail_user=global_config.getRaw('messenger', 'email_user'),
+    mail_pwd=global_config.getRaw('messenger', 'email_pwd'),
+    )
