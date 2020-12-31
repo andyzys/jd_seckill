@@ -1,17 +1,20 @@
-# -*- coding:utf-8 -*-
+#!/usr/bin/env python
+# -*- encoding=utf8 -*-
+
 import time
 import requests
 import json
 
 from datetime import datetime
-from jd_logger import logger
-from config import global_config
+
+from .jd_logger import logger
+from .config import global_config
 
 
 class Timer(object):
     def __init__(self, sleep_interval=0.5):
         # '2018-09-28 22:45:50.000'
-        self.buy_time = datetime.strptime(global_config.getRaw('config','buy_time'), "%Y-%m-%d %H:%M:%S.%f")
+        self.buy_time = datetime.strptime(global_config.getRaw('config', 'buy_time'), "%Y-%m-%d %H:%M:%S.%f")
         self.buy_time_ms = int(time.mktime(self.buy_time.timetuple()) * 1000.0 + self.buy_time.microsecond / 1000)
         self.sleep_interval = sleep_interval
 

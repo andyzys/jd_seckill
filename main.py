@@ -1,5 +1,5 @@
 import sys
-from jd_spider_requests import JdSeckill
+from jd_seckill.jd_spider_requests import JdSeckill
 
 
 if __name__ == '__main__':
