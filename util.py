@@ -127,7 +127,7 @@ def add_bg_for_qr(qr_path):
         qr = Image.open(qr_path)
         w = qr.width
         h = qr.width
-        bg = Image.new("RGB", (w * 2, h * 2), (255, 255, 255))
+        bg = Image.new("RGBA", (w * 2, h * 2), (255, 255, 255))
         result = Image.new(bg.mode, (w * 2, h * 2))
         result.paste(bg, box=(0, 0))
         result.paste(qr, box=(int(w / 2), int(h / 2)))
