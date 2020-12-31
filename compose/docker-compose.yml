@@ -1,0 +1,13 @@
+version: "2.2"
+services:
+  jd-seckill:
+    container_name: jd-seckill
+    restart: always
+    image: jd-seckill:latest
+    environment:
+      - JD_SECKILL_EID="string"
+      - JD_SECKILL_FP="string"
+      - JD_SECKILL_SKU_ID=100012043978
+      - JD_SECKILL_BUY_TIME="string"
+    volumes:
+      - ./common/configs/config.ini:/app/config.ini

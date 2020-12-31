@@ -124,6 +124,45 @@ $ zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8 # 解�
 搜索日志，出现“抢购成功，订单号xxxxx"，代表成功抢到了，务必半小时内支付订单！程序暂时不支持自动停止，需要手动STOP！  
 若两分钟还未抢购成功，基本上就是没抢到！程序暂时不支持自动停止，需要手动STOP！  
 
+
+## Docker 运行
+> 自行准备 docker，docker-compose 环境
+
+#### 构建镜像
+
+```bash
+$ cd dockerfile
+$ sudo docker build jd-seckill:latest .
+```
+
+#### 运行容器
+
+1. 修改配置文件 `compose/common/configs/config.ini `
+
+2. 使用 Docker compose 运行
+
+```bash
+$ cd compose
+$ sudo docker-compose up -d # -d 后台运行。
+```
+
+> 1. 默认运行选项为秒杀
+> 2. 如果构建镜像名不是 jd-seckill:latest 你需要修改 docker-compose.yml 中的镜像。
+
+3. 查看运行状态
+
+```bash
+# 确认 State 为 UP。
+$ sudo docker-compose ps
+# 查看并跟踪运行日志。
+$ sudo docker logs jd-seckill -f
+```
+4. 登录账号
+
+执行命令输出二维码扫码登录
+```bash
+$ sudo docker exec jd-seckill qrcode
+```
 ## 打赏
 不用再打赏了，抢到茅台的同学请保持这份喜悦，没抢到的继续加油 :)  
 

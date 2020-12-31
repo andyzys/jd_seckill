@@ -1,0 +1,5 @@
+#!/bin/bash
+set -eo pipefail
+
+zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8
+exit $?

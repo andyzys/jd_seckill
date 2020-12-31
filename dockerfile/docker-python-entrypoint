@@ -1,0 +1,16 @@
+#!/bin/bash
+set -eo pipefail
+
+if [ "${1:0:1}" = "-" ]; then
+	set -- python "$@"
+fi
+
+if [ "$1" = "reserve" ]; then
+	echo 1 | python main.py
+fi
+
+if [ "$1" = "seckill" ]; then
+	echo 2 | python main.py
+fi
+
+exec "$@"
