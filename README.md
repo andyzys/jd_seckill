@@ -132,7 +132,7 @@ $ zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8 # 解�
 
 ```bash
 $ cd dockerfile
-$ sudo docker build jd-seckill:latest .
+$ sudo docker build -t jd-seckill:latest .
 ```
 
 #### 运行容器
