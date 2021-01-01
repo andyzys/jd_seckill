@@ -88,13 +88,13 @@ def wait_some_time():
 
 def send_wechat(message):
     """推送信息到微信"""
-    url = 'http://sc.ftqq.com/{}.send'.format(global_config.getRaw('messenger', 'sckey'))
+    url = 'http://sc.ftqq.com/{}.send'.format(global_config.getRaw('messenger', 'server_chan_sckey'))
     payload = {
         "text": '抢购结果',
         "desp": message
     }
     headers = {
-        'User-Agent': global_config.getRaw('config', 'DEFAULT_USER_AGENT')
+        'User-Agent': global_config.getRaw('config', 'default_user_agent')
     }
     requests.get(url, params=payload, headers=headers)
 
