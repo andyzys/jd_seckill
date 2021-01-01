@@ -137,7 +137,7 @@ $ sudo docker build -t jd-seckill:latest .
 
 #### 运行容器
 
-1. 修改配置文件 `compose/common/configs/config.ini `
+1. 修改配置文件 `compose/docker-compose.yml`  
 
 2. 使用 Docker compose 运行
 
