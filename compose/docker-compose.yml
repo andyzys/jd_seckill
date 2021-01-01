@@ -2,7 +2,6 @@ version: "2.2"
 services:
   jd-seckill:
     container_name: jd-seckill
-    restart: always
     image: jd-seckill:latest
     environment:
       # eid, fp参数必须填写，具体请参考 wiki-常见问题
