@@ -35,7 +35,7 @@ class SpiderSession:
     """
     def __init__(self):
         self.cookies_dir_path = "cookies/"
-        self.user_agent = global_config.getRaw('config', 'DEFAULT_USER_AGENT')
+        self.user_agent = global_config.getRaw('config', 'default_user_agent')
 
         self.session = self._init_session()
 
@@ -391,7 +391,7 @@ class JdSeckill(object):
             try:
                 self.session.get(url='https:' + reserve_url)
                 logger.info('预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约')
-                if global_config.getRaw('messenger', 'enable') == 'true':
+                if global_config.getRaw('messenger', 'server_chan_enable') == 'true':
                     success_message = "预约成功，已获得抢购资格 / 您已成功预约过了，无需重复预约"
                     send_wechat(success_message)
                 break
@@ -619,13 +619,13 @@ class JdSeckill(object):
             total_money = resp_json.get('totalMoney')
             pay_url = 'https:' + resp_json.get('pcUrl')
             logger.info('抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}'.format(order_id, total_money, pay_url))
-            if global_config.getRaw('messenger', 'enable') == 'true':
+            if global_config.getRaw('messenger', 'server_chan_enable') == 'true':
                 success_message = "抢购成功，订单号:{}, 总价:{}, 电脑端付款链接:{}".format(order_id, total_money, pay_url)
                 send_wechat(success_message)
             return True
         else:
             logger.info('抢购失败，返回信息:{}'.format(resp_json))
-            if global_config.getRaw('messenger', 'enable') == 'true':
+            if global_config.getRaw('messenger', 'server_chan_enable') == 'true':
                 error_message = '抢购失败，返回信息:{}'.format(resp_json)
                 send_wechat(error_message)
             return False
