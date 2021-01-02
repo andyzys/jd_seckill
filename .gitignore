@@ -121,3 +121,4 @@ qr_code.png
 # jupyter
 .ipynb_checkpoints
 /test/
+/.user_data/
