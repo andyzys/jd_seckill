@@ -57,6 +57,8 @@ RUN set -ex; \
        \
         \
       pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/; \
+      # init Chromium Browser
+      python -c "import asyncio;from pyppeteer import launch;asyncio.get_event_loop().run_until_complete(launch())"; \
       \
       chmod +x /usr/local/bin/docker-python-entrypoint; \
       chmod +x /usr/local/bin/qrcode; \
