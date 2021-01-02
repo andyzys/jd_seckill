@@ -359,7 +359,7 @@ class JdSeckill(object):
         self.spider_session.load_cookies_from_local()
 
         self.qrlogin = QrLogin(self.spider_session)
-        self.jd_jdtdufp = JdTdudfp(self.spider_session)
+        self.jd_tdufp = JdTdudfp(self.spider_session)
 
         # 初始化信息
         self.sku_id = global_config.getRaw('config', 'sku_id')
@@ -399,8 +399,8 @@ class JdSeckill(object):
             if not self.qrlogin.is_login:
                 logger.info("{0} 需登陆后调用，开始扫码登陆".format(func.__name__))
                 self.login_by_qrcode()
-            if not self.jd_jdtdufp.is_init:
-                self.jd_jdtdufp.init_jd_tdudfp()
+            if not self.jd_tdufp.is_init:
+                self.jd_tdufp.init_jd_tdudfp()
             return func(self, *args, **kwargs)
         return new_func
 
@@ -650,8 +650,8 @@ class JdSeckill(object):
             'areaCode': '',
             'overseas': 0,
             'phone': '',
-            'eid': self.jd_jdtdufp.get("eid") if self.jd_jdtdufp.get("eid") else global_config.getRaw('config', 'eid'),
-            'fp': self.jd_jdtdufp.get("fp") if self.jd_jdtdufp.get("fp") else global_config.getRaw('config', 'fp'),
+            'eid': self.jd_tdufp.get("eid") if self.jd_tdufp.get("eid") else global_config.getRaw('config', 'eid'),
+            'fp': self.jd_tdufp.get("fp") if self.jd_tdufp.get("fp") else global_config.getRaw('config', 'fp'),
             'token': token,
             'pru': ''
         }
