@@ -3,6 +3,9 @@ services:
   jd-seckill:
     container_name: jd-seckill
     image: jd-seckill:latest
+    build:
+      context: ../dockerfile
+      dockerfile: Dockerfile
     environment:
       # eid, fp参数必须填写，具体请参考 wiki-常见问题
       # 随意填写可能导致订单无法提交等问题
