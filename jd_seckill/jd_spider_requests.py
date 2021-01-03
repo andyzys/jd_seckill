@@ -29,7 +29,7 @@ from .util import (
 
 )
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class SpiderSession:
     """
@@ -460,12 +460,19 @@ class JdSeckill(object):
             wait_some_time()
 
     def seckill_canstill_running(self):
-        """用config.ini文件中stop_time的设置值来判断抢购的任务是否可以继续运行"""
-        stop_time = datetime.strptime(global_config.getRaw('config','stop_time'), "%Y-%m-%d %H:%M:%S.%f")
+        """用config.ini文件中的continue_time加上函数buytime_get()获取到的buy_time，
+            来判断抢购的任务是否可以继续运行
+        """
+        buy_time = self.timers.buytime_get()
+        continue_time = int(global_config.getRaw('config','continue_time'))
+        stop_time = datetime.strptime(
+            (buy_time + timedelta(minutes=continue_time)).strftime("%Y-%m-%d %H:%M:%S.%f"),
+            "%Y-%m-%d %H:%M:%S.%f"
+        )
         current_time = datetime.now()
         if current_time > stop_time:
             self.running_flag = False
-            logger.info('end_time设定的时间到了，任务结束。')
+            logger.info('超过允许的运行时间，任务结束。')
 
     def make_reserve(self):
         """商品预约"""
