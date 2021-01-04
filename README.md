@@ -141,9 +141,8 @@ $ sudo docker-compose -f compose/docker-compose.yml up
 
 > 注意：
 > 1. 默认运行选项为秒杀  
-> 1. 容器默认前端运行，如果需要停止容器连续执行按两次`Ctrl+C`。
+> 1. 容器默认前端运行，如果需要停止容器连续按两次`Ctrl+C`。
 > 1. 如果想后端运行，执行命令`sudo docker-compose -f compose/docker-compose.yml up -d`。
-> 1. 如果构建镜像名不是`jd-seckill:latest`你需要修改`docker-compose.yml`中的镜像。
 > 1. 如果存在名称为`jd-seckill`的非`docker-compose`创建的容器，需要执行`sudo docker rm -f jd-seckill`先进行删除。
 
 #### 查看登录二维码
