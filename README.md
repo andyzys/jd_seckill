@@ -87,8 +87,8 @@
 #### 2. 网页扫码登录，或者账号密码登录
 #### 3. 填写config.ini配置信息 
 (1)`eid`和`fp`找个普通商品随便下单,然后抓包就能看到,这两个值可以填固定的 
-> 随便找一个商品下单，然后进入结算页面，打开浏览器的调试窗口，切换到控制台Tab页，在控制台中输入变量`_JdTdudfp`，即可从输出的Json中获取`eid`和`fp`。  
-> 不会的话参考原作者的issue https://github.com/zhou-xiaojun/jd_mask/issues/22
+> 现在已经支持自动获取，因为添加了一个新的三方库，需要在程序运行之前再执行一次安装第三方库的命令  
+> 如果想手动获取，随便找一个商品下单，然后进入结算页面，打开浏览器的调试窗口，切换到控制台Tab页，在控制台中输入变量`_JdTdudfp`，即可从输出的Json中获取`eid`和`fp`。
 
 (2)`sku_id`,`default_user_agent` 
 > `sku_id`已经按照茅台的填好。
@@ -126,43 +126,96 @@ $ zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8 # 解�
 
 
 ## Docker 运行
-> 自行准备 docker，docker-compose 环境
 
-#### 构建镜像
+> * 自行准备`docker`或`docker-compose`环境  
+> * 修改`dockerfile`目录中的配置文件`docker.env`  
+> * 目前支持直接使用`docker`的方式进行管理，也支持`docker-compose`的方式进行管理，根据自己的使用习惯进行选择  
+> * 推荐使用`docker-compose`的方式，更方便一点  
+> * 最新代码合并到主分之后，镜像服务器构建新的镜像会需要大概30分钟的时间，请分支合并后一小时再拉取最新镜像  
 
+### 使用Docker-Compose进行容器管理（推荐）
+
+#### 拉取镜像
+```bash
+# 如果不执行此步骤则启动容器时自动进行本地构建镜像
+$ sudo docker-compose -f compose/docker-compose.yml pull 
+```
+
+#### 启动容器
+
+```bash
+# 如镜像不存在会自动本地构建一个镜像
+$ sudo docker-compose -f compose/docker-compose.yml up 
+```
+
+> 注意：
+> 1. 默认运行选项为秒杀  
+> 1. 容器默认前端运行，如果需要停止容器连续按两次`Ctrl+C`。
+> 1. 如果想后端运行，执行命令`sudo docker-compose -f compose/docker-compose.yml up -d`。
+> 1. 如果存在名称为`jd-seckill`的非`docker-compose`创建的容器，需要执行`sudo docker rm -f jd-seckill`先进行删除。
+
+#### 查看登录二维码
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml exec jd-seckill qrcode
+```
+
+#### 停止容器
+
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml down -t 0 
+```
+
+#### 滚动打印运行日志
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml logs -f
+```
+
+#### 查看容器状态
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml ps
+```
+
+### 使用Docker直接进行容器管理
+
+#### 创建镜像
+> 一共两种方式可以创建镜像，任选其一即可  
+> 如果本地构建镜像失败，可以尝试拉取镜像的方式
+
+```bash
+# 第一种，直接从`DockerHub`仓库拉取镜像
+$ sudo docker pull huanghyw/jd-seckill:latest
+
+# 第二种，本地构建镜像
+$ cd dockerfile
+$ sudo docker build -t huanghyw/jd-seckill:latest .
+```
+
+#### 启动容器
 ```bash
 $ cd dockerfile
-$ sudo docker build -t jd-seckill:latest .
+$ sudo docker run -it --rm --env-file docker.env --name jd-seckill huanghyw/jd-seckill:latest
 ```
 
-#### 运行容器
-
-1. 修改配置文件 `compose/docker-compose.yml`  
-
-2. 使用 Docker compose 运行
-
-```bash
-$ cd compose
-$ sudo docker-compose up -d # -d 后台运行。
-```
-
-> 1. 默认运行选项为秒杀
-> 2. 如果构建镜像名不是 jd-seckill:latest 你需要修改 docker-compose.yml 中的镜像。
-
-3. 查看运行状态
-
-```bash
-# 确认 State 为 UP。
-$ sudo docker-compose ps
-# 查看并跟踪运行日志。
-$ sudo docker logs jd-seckill -f
-```
-4. 登录账号
-
-执行命令输出二维码扫码登录
+#### 查看登录二维码
 ```bash
 $ sudo docker exec jd-seckill qrcode
 ```
+
+#### 停止容器
+```bash
+$ sudo docker stop jd-seckill -t 0
+```
+
+#### 滚动打印运行日志
+```bash
+$ sudo docker logs jd-seckill -f
+```
+
+#### 查看容器状态
+```bash
+$ sudo docker ps -a
+```
+
 ## 打赏
 不用再打赏了，抢到茅台的同学请保持这份喜悦，没抢到的继续加油 :)  
 
