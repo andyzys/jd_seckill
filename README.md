@@ -126,16 +126,25 @@ $ zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8 # 解�
 
 
 ## Docker 运行
-> 自行准备`docker`或`docker-compose`环境  
-> 修改`dockerfile`目录中的配置文件`docker.env`  
-> 目前支持直接使用`docker`的方式进行管理，也支持`docker-compose`的方式进行管理，根据自己的使用习惯进行选择  
-> 推荐使用`docker-compose`的方式，更方便一点  
+
+> * 自行准备`docker`或`docker-compose`环境  
+> * 修改`dockerfile`目录中的配置文件`docker.env`  
+> * 目前支持直接使用`docker`的方式进行管理，也支持`docker-compose`的方式进行管理，根据自己的使用习惯进行选择  
+> * 推荐使用`docker-compose`的方式，更方便一点  
+> * 最新代码合并到主分之后，镜像服务器构建新的镜像会需要大概30分钟的时间，请分支合并后一小时再拉取最新镜像  
 
 ### 使用Docker-Compose进行容器管理（推荐）
 
-#### 启动容器（本步骤会自动判断是否需要构建）
+#### 拉取镜像
+```bash
+# 如果不执行此步骤则启动容器时自动进行本地构建镜像
+$ sudo docker-compose -f compose/docker-compose.yml pull 
+```
+
+#### 启动容器
 
 ```bash
+# 如镜像不存在会自动本地构建一个镜像
 $ sudo docker-compose -f compose/docker-compose.yml up 
 ```
 
@@ -168,16 +177,23 @@ $ sudo docker-compose -f compose/docker-compose.yml ps
 
 ### 使用Docker直接进行容器管理
 
-#### 构建镜像
+#### 创建镜像
+> 一共两种方式可以创建镜像，任选其一即可  
+> 如果本地构建镜像失败，可以尝试拉取镜像的方式
+
 ```bash
+# 第一种，直接从`DockerHub`仓库拉取镜像
+$ sudo docker pull huanghyw/jd-seckill:latest
+
+# 第二种，本地构建镜像
 $ cd dockerfile
-$ sudo docker build -t jd-seckill:latest .
+$ sudo docker build -t huanghyw/jd-seckill:latest .
 ```
 
 #### 启动容器
 ```bash
 $ cd dockerfile
-$ sudo docker run -it --rm --env-file docker.env --name jd-seckill jd-seckill:latest
+$ sudo docker run -it --rm --env-file docker.env --name jd-seckill huanghyw/jd-seckill:latest
 ```
 
 #### 查看登录二维码
