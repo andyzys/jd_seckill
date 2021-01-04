@@ -472,7 +472,7 @@ class JdSeckill(object):
         resp = self.session.get(url=url, params=payload, headers=headers)
         resp_json = parse_json(resp.text)
         reserve_url = resp_json.get('url')
-        self.timers.start()
+        
         while True:
             try:
                 self.session.get(url='https:' + reserve_url)
