@@ -62,7 +62,10 @@ RUN set -ex; \
       pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/; \
       \
       # init Chromium Browser
-      python -c "import asyncio;\
+      python -c "import os;\
+                DEFAULT_DOWNLOAD_HOST = 'https://npm.taobao.org/mirrors'; \
+                os.environ[\"PYPPETEER_DOWNLOAD_HOST\"] = DEFAULT_DOWNLOAD_HOST;\
+                import asyncio;\
                 from pyppeteer import launch;\
                 asyncio.get_event_loop()\
                     .run_until_complete(launch(args=[\"--no-sandbox\", \"--disable-setuid-sandbox\"]))"; \
