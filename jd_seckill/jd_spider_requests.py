@@ -297,9 +297,11 @@ class JdTdudfp:
         try:
             from pyppeteer import launch
             url = "https://www.jd.com/"
-            browser = await launch(userDataDir=".user_data", args=['--start-maximized',
-                                                                   '--no-sandbox', '--disable-setuid-sandbox'])
+            browser = await launch(userDataDir=".user_data", autoClose=True,
+                                   args=['--start-maximized', '--no-sandbox', '--disable-setuid-sandbox'])
             page = await browser.newPage()
+            # 有些页面打开慢，这里设置时间长一点，360秒
+            page.setDefaultNavigationTimeout(360 * 1000)
             await page.setViewport({"width": 1920, "height": 1080})
             await page.setUserAgent(self.user_agent)
             for key, value in self.cookies.items():
