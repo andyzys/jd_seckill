@@ -126,43 +126,81 @@ $ zbarimg qr_code.png > qrcode.txt && qrencode -r qrcode.txt -o - -t UTF8 # 解�
 
 
 ## Docker 运行
-> 自行准备 docker，docker-compose 环境
+> 自行准备`docker`或`docker-compose`环境  
+> 修改`dockerfile`目录中的配置文件`docker.env`  
+> 目前支持直接使用`docker`的方式进行管理，也支持`docker-compose`的方式进行管理，根据自己的使用习惯进行选择  
+> 推荐使用`docker-compose`的方式，更方便一点  
+
+### 使用Docker-Compose进行容器管理（推荐）
+
+#### 启动容器（本步骤会自动判断是否需要构建）
+
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml up 
+```
+
+> 注意：
+> 1. 默认运行选项为秒杀  
+> 1. 容器默认前端运行，如果需要停止容器连续执行按两次`Ctrl+C`。
+> 1. 如果想后端运行，执行命令`sudo docker-compose -f compose/docker-compose.yml up -d`。
+> 1. 如果构建镜像名不是`jd-seckill:latest`你需要修改`docker-compose.yml`中的镜像。
+> 1. 如果存在名称为`jd-seckill`的非`docker-compose`创建的容器，需要执行`sudo docker rm -f jd-seckill`先进行删除。
+
+#### 查看登录二维码
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml exec jd-seckill qrcode
+```
+
+#### 停止容器
+
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml down -t 0 
+```
+
+#### 滚动打印运行日志
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml logs -f
+```
+
+#### 查看容器状态
+```bash
+$ sudo docker-compose -f compose/docker-compose.yml ps
+```
+
+### 使用Docker直接进行容器管理
 
 #### 构建镜像
-
 ```bash
 $ cd dockerfile
 $ sudo docker build -t jd-seckill:latest .
 ```
 
-#### 运行容器
-
-1. 修改配置文件 `compose/docker-compose.yml`  
-
-2. 使用 Docker compose 运行
-
+#### 启动容器
 ```bash
-$ cd compose
-$ sudo docker-compose up -d # -d 后台运行。
+$ cd dockerfile
+$ sudo docker run -it --rm --env-file docker.env --name jd-seckill jd-seckill:latest
 ```
 
-> 1. 默认运行选项为秒杀
-> 2. 如果构建镜像名不是 jd-seckill:latest 你需要修改 docker-compose.yml 中的镜像。
-
-3. 查看运行状态
-
-```bash
-# 确认 State 为 UP。
-$ sudo docker-compose ps
-# 查看并跟踪运行日志。
-$ sudo docker logs jd-seckill -f
-```
-4. 登录账号
-
-执行命令输出二维码扫码登录
+#### 查看登录二维码
 ```bash
 $ sudo docker exec jd-seckill qrcode
 ```
+
+#### 停止容器
+```bash
+$ sudo docker stop jd-seckill -t 0
+```
+
+#### 滚动打印运行日志
+```bash
+$ sudo docker logs jd-seckill -f
+```
+
+#### 查看容器状态
+```bash
+$ sudo docker ps -a
+```
+
 ## 打赏
 不用再打赏了，抢到茅台的同学请保持这份喜悦，没抢到的继续加油 :)  
 
