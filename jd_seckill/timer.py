@@ -54,3 +54,7 @@ class Timer(object):
                 break
             else:
                 time.sleep(self.sleep_interval)
+
+    def buytime_get(self):
+        """获取开始抢购的时间"""
+        return self.buy_time
