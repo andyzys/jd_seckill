@@ -1,3 +1,4 @@
+import multiprocessing
 import random
 import time
 import requests
@@ -322,11 +323,11 @@ class JdSeckill(object):
         self._reserve()
 
     @check_login
-    def seckill(self):
+    def seckill(self, seckill_url_data):
         """
         抢购
         """
-        self._seckill()
+        self._seckill(seckill_url_data)
 
     @check_login
     def seckill_by_proc_pool(self, work_count=5):
@@ -334,9 +335,10 @@ class JdSeckill(object):
         多进程进行抢购
         work_count：进程数量
         """
+        seckill_url_data = multiprocessing.Manager().dict()
         with ProcessPoolExecutor(work_count) as pool:
             for i in range(work_count):
-                pool.submit(self.seckill)
+                pool.submit(self.seckill, seckill_url_data)
 
     def _reserve(self):
         """
@@ -350,16 +352,18 @@ class JdSeckill(object):
                 logger.info('预约发生异常!', e)
             wait_some_time()
 
-    def _seckill(self):
+    def _seckill(self, seckill_url_data):
         """
         抢购
         """
         while True:
             try:
-                self.request_seckill_url()
+                self.request_seckill_url(seckill_url_data)
                 while True:
                     self.request_seckill_checkout_page()
-                    self.submit_seckill_order()
+                    res = self.submit_seckill_order()
+                    if res:
+                        os.exit()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             wait_some_time()
@@ -426,7 +430,7 @@ class JdSeckill(object):
         sku_title = x_data.xpath('/html/head/title/text()')
         return sku_title[0]
 
-    def get_seckill_url(self):
+    def get_seckill_url(self, seckill_url_data):
         """获取商品的抢购链接
         点击"抢购"按钮后，会有两次302跳转，最后到达订单结算页面
         这里返回第一次跳转后的页面url，作为商品的抢购链接
@@ -445,38 +449,42 @@ class JdSeckill(object):
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
         while True:
+            if seckill_url_data:
+                logger.info("共享变量中获取抢购链接success: %s", seckill_url_data["url"])
+                return seckill_url_data["url"]
             resp = self.session.get(url=url, headers=headers, params=payload)
             resp_json = parse_json(resp.text)
             if resp_json.get('url'):
                 # https://divide.jd.com/user_routing?skuId=8654289&sn=c3f4ececd8461f0e4d7267e96a91e0e0&from=pc
                 router_url = 'https:' + resp_json.get('url')
                 # https://marathon.jd.com/captcha.html?skuId=8654289&sn=c3f4ececd8461f0e4d7267e96a91e0e0&from=pc
-                seckill_url = router_url.replace(
-                    'divide', 'marathon').replace(
-                    'user_routing', 'captcha.html')
+                seckill_url = router_url.replace('divide', 'marathon').replace('user_routing', 'captcha.html')
                 logger.info("抢购链接获取成功: %s", seckill_url)
+                print('\033[1;33m抢购链接获取成功 \" %s  \"\033[3;31m' % seckill_url)
                 return seckill_url
             else:
                 logger.info("抢购链接获取失败，稍后自动重试")
                 wait_some_time()
 
-    def request_seckill_url(self):
+    def request_seckill_url(self, seckill_url_data):
         """访问商品的抢购链接（用于设置cookie等"""
         logger.info('用户:{}'.format(self.get_username()))
         logger.info('商品名称:{}'.format(self.get_sku_title()))
         self.timers.start()
-        self.seckill_url[self.sku_id] = self.get_seckill_url()
+        if seckill_url_data:
+            logger.info('='*100 + seckill_url_data.get("url"))
+            self.seckill_url[self.sku_id] = seckill_url_data.get("url")
+        else:
+            seckill_url_data["url"] = self.get_seckill_url(seckill_url_data)
+            self.seckill_url[self.sku_id] = seckill_url_data["url"]
+            logger.info('#'*100+self.seckill_url[self.sku_id])
         logger.info('访问商品的抢购连接...')
         headers = {
             'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
             'Referer': 'https://item.jd.com/{}.html'.format(self.sku_id),
         }
-        self.session.get(
-            url=self.seckill_url.get(
-                self.sku_id),
-            headers=headers,
-            allow_redirects=False)
+        self.session.get(url=self.seckill_url.get(self.sku_id), headers=headers, allow_redirects=False)
 
     def request_seckill_checkout_page(self):
         """访问抢购订单结算页面"""
@@ -509,9 +517,14 @@ class JdSeckill(object):
             'User-Agent': self.user_agent,
             'Host': 'marathon.jd.com',
         }
-        resp = self.session.post(url=url, data=data, headers=headers)
 
-        resp_json = None
+        resp = None
+        try:
+            resp = self.session.post(url=url, data=data, headers=headers)
+        except Exception as e:
+            logger.error("秒杀初始化信息链接访问异常")
+            logger.error(e)
+
         try:
             resp_json = parse_json(resp.text)
         except Exception:
@@ -579,7 +592,8 @@ class JdSeckill(object):
         try:
             self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
         except Exception as e:
-            logger.info('抢购失败，无法获取生成订单的基本信息，接口返回:【{}】'.format(str(e)))
+            logger.info('抢购失败，无法获取生成订单的基本信息')
+            logger.info(e)
             return False
 
         logger.info('提交抢购订单...')
