@@ -518,18 +518,17 @@ class JdSeckill(object):
             'Host': 'marathon.jd.com',
         }
 
-        resp = None
         try:
             resp = self.session.post(url=url, data=data, headers=headers)
         except Exception as e:
             logger.error("秒杀初始化信息链接访问异常")
             logger.error(e)
-
+            raise e
         try:
             resp_json = parse_json(resp.text)
         except Exception:
             raise SKException('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
-
+        logger.info(resp_json)
         return resp_json
 
     def _get_seckill_order_data(self):
