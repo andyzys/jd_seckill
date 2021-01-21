@@ -622,6 +622,7 @@ class JdSeckill(object):
         # 抢购成功：
         # {"appUrl":"xxxxx","orderId":820227xxxxx,"pcUrl":"xxxxx","resultCode":0,"skuId":0,"success":true,"totalMoney":"xxxxx"}
         if resp_json.get('success'):
+            print('\033[1;33m=======================success===================== \033[3;31m')
             order_id = resp_json.get('orderId')
             total_money = resp_json.get('totalMoney')
             pay_url = 'https:' + resp_json.get('pcUrl')
