@@ -588,13 +588,15 @@ class JdSeckill(object):
         payload = {
             'skuId': self.sku_id,
         }
-        try:
-            self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
-        except Exception as e:
-            logger.info('抢购失败，无法获取生成订单的基本信息')
-            logger.info(e)
-            return False
-
+        while True:
+            try:
+                self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+            except Exception as e:
+                logger.info('抢购失败，无法获取生成订单的基本信息')
+                logger.info(e)
+                return False
+            else:
+                break
         logger.info('提交抢购订单...')
         headers = {
             'User-Agent': self.user_agent,
