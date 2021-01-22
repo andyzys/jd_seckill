@@ -1,5 +1,7 @@
+import datetime
 import multiprocessing
 import random
+import sys
 import time
 import requests
 import functools
@@ -352,6 +354,12 @@ class JdSeckill(object):
                 logger.info('预约发生异常!', e)
             wait_some_time()
 
+    def time_over(self):
+        now = datetime.datetime.now()
+        buy_time = datetime.datetime.strptime(global_config.getRaw('config', 'buy_time'), "%Y-%m-%d %H:%M:%S.%f")
+        seconds = (now - buy_time).seconds
+        return seconds > 3
+
     def _seckill(self, seckill_url_data):
         """
         抢购
@@ -360,10 +368,13 @@ class JdSeckill(object):
             try:
                 self.request_seckill_url(seckill_url_data)
                 while True:
+                    if self.time_over():
+                        logger.info('时间到达，抢购结束')
+                        sys.exit()
                     self.request_seckill_checkout_page()
                     res = self.submit_seckill_order()
                     if res:
-                        os.exit()
+                        sys.exit()
             except Exception as e:
                 logger.info('抢购发生异常，稍后继续执行！', e)
             wait_some_time()
@@ -384,7 +395,7 @@ class JdSeckill(object):
         resp = self.session.get(url=url, params=payload, headers=headers)
         resp_json = parse_json(resp.text)
         reserve_url = resp_json.get('url')
-        self.timers.start()
+        # self.timers.start()
         while True:
             try:
                 self.session.get(url='https:' + reserve_url)
