@@ -1,8 +1,17 @@
 import json
 import random
 import requests
+import os
+import time
+import smtplib
+
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
+
 from config import global_config
-from lxml import etree
+from jd_logger import logger
+
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
@@ -57,10 +66,12 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.14 (KHTML, like Gecko) Chrome/24.0.1292.0 Safari/537.14"
     ]
 
+
 def parse_json(s):
     begin = s.find('{')
     end = s.rfind('}') + 1
     return json.loads(s[begin:end])
+
 
 def get_random_useragent():
     """生成随机的UserAgent
@@ -68,39 +79,10 @@ def get_random_useragent():
     """
     return random.choice(USER_AGENTS)
 
-def get_cookies():
-    """解析cookies内容并添加到cookiesJar"""
-    manual_cookies = {}
-    for item in global_config.getRaw('config','cookies_String').split(';'):
-        name, value = item.strip().split('=', 1)
-        # 用=号分割，分割1次
-        manual_cookies[name] = value
-        # 为字典cookies添加内容
-    cookiesJar = requests.utils.cookiejar_from_dict(manual_cookies, cookiejar=None, overwrite=True)
-    return cookiesJar
 
-def get_session():
-    # 初始化session
-    session = requests.session()
-    session.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                       "Connection": "keep-alive"}
-    checksession = requests.session()
-    checksession.headers = {"User-Agent": global_config.getRaw('config', 'DEFAULT_USER_AGENT'),
-                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                            "Connection": "keep-alive"}
-    # 获取cookies保存到session
-    session.cookies = get_cookies()
-    return session
+def wait_some_time():
+    time.sleep(random.randint(100, 200) / 1000)
 
-def get_sku_title():
-    """获取商品名称"""
-    url = 'https://item.jd.com/{}.html'.format(global_config.getRaw('config','sku_id'))
-    session = get_session()
-    resp = session.get(url).content
-    x_data = etree.HTML(resp)
-    sku_title = x_data.xpath('/html/head/title/text()')
-    return sku_title[0]
 
 def send_wechat(message):
     """推送信息到微信"""
@@ -113,3 +95,94 @@ def send_wechat(message):
         'User-Agent':global_config.getRaw('config', 'DEFAULT_USER_AGENT')
     }
     requests.get(url, params=payload, headers=headers)
+
+
+def response_status(resp):
+    if resp.status_code != requests.codes.OK:
+        print('Status: %u, Url: %s' % (resp.status_code, resp.url))
+        return False
+    return True
+
+
+def open_image(image_file):
+    if os.name == "nt":
+        os.system('start ' + image_file)  # for Windows
+    else:
+        if os.uname()[0] == "Linux":
+            if "deepin" in os.uname()[2]:
+                os.system("deepin-image-viewer " + image_file)  # for deepin
+            else:
+                os.system("eog " + image_file)  # for Linux
+        else:
+            os.system("open " + image_file)  # for Mac
+
+
+def save_image(resp, image_file):
+    with open(image_file, 'wb') as f:
+        for chunk in resp.iter_content(chunk_size=1024):
+            f.write(chunk)
+
+
+class Email():
+
+    def __init__(self, mail_user, mail_pwd, mail_host=''):
+        if global_config.getRaw('messenger', 'email_enable') == 'false':
+            return
+
+        smtpObj = smtplib.SMTP()
+        # 没传会自动判断 判断不出来默认QQ邮箱
+        if mail_host:
+            self.mail_host = mail_host
+        elif mail_user.endswith('163.com'):
+            self.mail_host = 'smtp.163.com'
+        elif mail_user.endswith(('sina.com', 'sina.cn')):
+            self.mail_host = 'smtp.163.com'
+        elif mail_user.endswith('qq.com'):
+            self.mail_host = 'smtp.qq.com'
+        elif mail_user.endswith('sohu.com'):
+            self.mail_host = 'smtp.sohu.com'
+        else:
+            self.mail_host = 'smtp.qq.com'
+        self.mail_user = mail_user
+        self.is_login = False
+        try:
+            smtpObj.connect(mail_host, 25)
+            smtpObj.login(mail_user, mail_pwd)
+            self.is_login = True
+        except Exception as e:
+            logger.info('邮箱登录失败!', e)
+        self.smtpObj = smtpObj
+
+    def send(self, title, msg, receivers: list, img=''):
+        """
+        发送smtp邮件至收件人
+        :param title:
+        :param msg: 如果发送图片，需在msg内嵌入<img src='cid:xxx'>，xxx为图片名
+        :param receivers:
+        :param img: 图片名
+        :return:
+        """
+        if self.is_login:
+            message = MIMEMultipart('alternative')
+            msg_html = MIMEText(msg, 'html', 'utf-8')
+            message.attach(msg_html)
+            message['Subject'] = title
+            message['From'] = self.mail_user
+            if img:
+                with open(img, "rb") as f:
+                    msg_img = MIMEImage(f.read())
+                msg_img.add_header('Content-ID', img)
+                message.attach(msg_img)
+            try:
+                self.smtpObj.sendmail(self.mail_user, receivers, message.as_string())
+            except Exception as e:
+                logger.info('邮件发送失败!', e)
+        else:
+            logger.info('邮箱未登录')
+
+
+email = Email(
+    mail_host=global_config.getRaw('messenger', 'email_host'),
+    mail_user=global_config.getRaw('messenger', 'email_user'),
+    mail_pwd=global_config.getRaw('messenger', 'email_pwd'),
+    )
