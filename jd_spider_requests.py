@@ -49,7 +49,7 @@ class JdSeckill(object):
         """
         预约
         """
-        self.login()
+        # self.login()
         while True:
             try:
                 self.make_reserve()
@@ -61,7 +61,7 @@ class JdSeckill(object):
         """
         抢购
         """
-        self.login()
+        # self.login()
         while True:
             try:
                 self.request_seckill_url()
